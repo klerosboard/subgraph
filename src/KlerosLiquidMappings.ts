@@ -599,11 +599,17 @@ export function handleAppealDecision(event: AppealDecisionEvent): void {
     log.debug("handleAppealDecision: Decreasing in 1 due to courtJump disputesOngoing and disputesNum in the old court {}", [oldcourt.id])
     oldcourt.disputesOngoing = oldcourt.disputesOngoing.minus(BigInt.fromI32(1))
     oldcourt.disputesNum = oldcourt.disputesNum.minus(BigInt.fromI32(1))
+    oldcourt.appealPhaseDisputes = oldcourt.appealPhaseDisputes.minus(BigInt.fromI32(1))
     oldcourt.save()
     // update new court counters
     log.debug("handleAppealDecision: Increasing in 1 due to courtJump disputesNum and disputesOngoing in the new court {}", [court.id])
     court.disputesNum = court.disputesNum.plus(BigInt.fromI32(1))
     court.disputesOngoing = court.disputesOngoing.plus(BigInt.fromI32(1))
+    court.evidencePhaseDisputes = court.evidencePhaseDisputes.plus(BigInt.fromI32(1))
+    court.save()
+  } else {
+    court.appealPhaseDisputes = court.appealPhaseDisputes.minus(BigInt.fromI32(1));
+    court.evidencePhaseDisputes = court.evidencePhaseDisputes.plus(BigInt.fromI32(1));
     court.save()
   }
 
@@ -731,6 +737,8 @@ export function getOrInitializeKlerosCounter(): KlerosCounter {
     kc.commitPhaseDisputes = BigInt.fromI32(0);
     kc.votingPhaseDisputes = BigInt.fromI32(0);
     kc.appealPhaseDisputes = BigInt.fromI32(0);
+    kc.disputesAppealed = BigInt.fromI32(0);
+    kc.appealPercentage = BigInt.fromI32(0);
     kc.activeJurors = BigInt.fromI32(0);
     kc.inactiveJurors = BigInt.fromI32(0);
     kc.drawnJurors = BigInt.fromI32(0);
@@ -889,7 +897,10 @@ function getOrCreateJuror(address: Address, courtID: BigInt | null, totalStake: 
     if (courtID !== null){
       let court = getOrCreateCourt(courtID, KLContract)
       juror.subcourtsIDs = [court.id]
+    } else {
+      juror.subcourtsIDs = []
     }
+    juror.totalGasCost = BigInt.fromI32(0)
     juror.save()
   }
   return juror
